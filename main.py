@@ -1,7 +1,10 @@
 import pymongo
 import random
 import time
-from datetime import datetime
+import psutil
+import time
+
+p = psutil.Process()
 
 # Connect to MongoDB
 client = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -9,22 +12,31 @@ db = client["cpu_memory_records"]
 collection = db["records"]
 
 # Function to generate mock CPU and memory records
-def generate_mock_record():
-	timestamp = datetime.now()
-	cpu_percent = round(random.uniform(0, 100), 2)
-	memory_percent = round(random.uniform(0, 100), 2)
+def generate_record(cpuUsage, memUsage):
+	
+	timestamp = time.time()
+	cpu_percent = cpuUsage
+	memory_percent = memUsage
+
 	record = {
 		"timestamp": timestamp,
-		"cpu_percent": cpu_percent,
-		"memory_percent": memory_percent
+		"cpu_used": cpu_percent,
+		"memory_used": memory_percent
 	}
+	
 	return record
 
-# Generate 100 mock records and insert them into MongoDB
-for _ in range(100):
-	record = generate_mock_record()
-	collection.insert_one(record)
-	print("Inserted record:", record)
-	time.sleep(1)  # Simulate time passing
+while True:
+	cpu_percentage = psutil.cpu_percent(percpu=False)
+	memory_percent = psutil.virtual_memory().percent
+	
+	record = generate_record(cpu_percentage, memory_percent)
 
-print("Done inserting records.")
+	if cpu_percentage == 0.0:
+		continue
+
+	print(record["cpu_used"], record["memory_used"])
+
+	collection.insert_one(record)
+
+	time.sleep(1 / 3)
