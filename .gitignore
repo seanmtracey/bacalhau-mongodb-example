@@ -1,2 +1,8 @@
 NOTES.md
 _poll.py
+.env.json
+*.tfstate
+.terraform
+terraform.tfstate.backup
+.terraform.lock.hcl
+*.out
