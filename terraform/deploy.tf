@@ -68,6 +68,8 @@ resource "google_compute_instance" "my_instance" {
 		sudo systemctl daemon-reload
 		sudo systemctl enable poller.service
 		sudo systemctl start poller.service
+		
+		sudo systemctl enable docker.service
 
 	EOF
 
