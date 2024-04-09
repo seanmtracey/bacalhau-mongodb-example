@@ -61,7 +61,13 @@ resource "google_compute_instance" "my_instance" {
 		cd ./scripts
 
 		sudo pip3 install --no-cache-dir -r requirements.txt
-		sudo python3 main.py
+		# sudo python3 main.py
+
+		echo -e '[Unit]\nDescription=The system poller for use with MongoDB\nAfter=network.target\n\n[Service]\nType=simple\nExecStart=/usr/bin/python3 /scripts/main.py\nRestart=always\n\n[Install]\nWantedBy=multi-user.target' | sudo tee /etc/systemd/system/poller.service
+
+		sudo systemctl daemon-reload
+		sudo systemctl enable poller.service
+		sudo systemctl start poller.service
 
 	EOF
 
