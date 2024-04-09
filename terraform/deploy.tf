@@ -33,10 +33,14 @@ resource "google_compute_instance" "my_instance" {
 
   metadata_startup_script = <<-EOF
     #!/bin/bash
-    sudo apt-get update
+    sudo apt-get update -y
     sudo apt-get install -y docker.io
-    docker pull mongo:latest
-    docker run --name local-mongo -d -p 27017:27017 mongo:latest
+    sudo docker pull mongo:latest
+    sudo docker pull seanmtracey/smt-mongo-poll:linux_amd64
+    sudo docker run --name local-mongo --restart=always -d -p 27017:27017 mongo:latest
+    sudo docker run -d --name poller --network="host" seanmtracey/smt-mongo-poll:linux_amd64
+
+    # sudo docker run --name local-mongo --restart=always -d -p 27017:27017 mongo:latest
     # sudo docker run -d --restart=always -e MONGO_ADDR=your_mongo_host -e MONGO_PORT=your_mongo_port your_docker_image_name
   EOF
 }
