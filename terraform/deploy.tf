@@ -1,46 +1,68 @@
 provider "google" {
-  project = var.project_id
+	project = var.project_id
+}
+
+# Archive the scripts folder
+data "archive_file" "scripts" {
+	type        = "zip"
+	source_dir  = "../scripts/"
+	output_path = "../scripts.zip"
+}
+
+resource "google_storage_bucket_object" "zip_file" {
+	name   = "scripts.zip"
+	bucket = "smt-dev"
+	source = "../scripts.zip"
 }
 
 resource "google_compute_firewall" "http" {
-  name    = "allow-http-https"
-  network = "default"
+	name    = "allow-http-https"
+	network = "default"
 
-  allow {
-    protocol = "tcp"
-    ports    = ["80", "443", "27017"]
-  }
+	allow {
+		protocol = "tcp"
+		ports    = ["80", "443", "27017"]
+	}
 
-  source_ranges = ["0.0.0.0/0"]
+	source_ranges = ["0.0.0.0/0"]
 }
 
 resource "google_compute_instance" "my_instance" {
-  name         = "mongodb-test"
-  machine_type = "e2-small"
-  zone         = "europe-west2-a"
+	name         = "mongodb-test"
+	machine_type = "e2-small"
+	zone         = "europe-west2-a"
 
-  boot_disk {
-    initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2004-lts"
-      size = 20
-    }
-  }
+	boot_disk {
+		initialize_params {
+			image = "ubuntu-os-cloud/ubuntu-2004-lts"
+			size = 20
+		}
+	}
 
-  network_interface {
-    network = "default"
-    access_config {}
-  }
+	network_interface {
+		network = "default"
+		access_config {}
+	}
 
-  metadata_startup_script = <<-EOF
-    #!/bin/bash
-    sudo apt-get update -y
-    sudo apt-get install -y docker.io
-    sudo docker pull mongo:latest
-    sudo docker pull seanmtracey/smt-mongo-poll:linux_amd64
-    sudo docker run --name local-mongo --restart=always -d -p 27017:27017 mongo:latest
-    sudo docker run -d --name poller --network="host" seanmtracey/smt-mongo-poll:linux_amd64
+	metadata_startup_script = <<-EOF
+		#!/bin/bash
 
-    # sudo docker run --name local-mongo --restart=always -d -p 27017:27017 mongo:latest
-    # sudo docker run -d --restart=always -e MONGO_ADDR=your_mongo_host -e MONGO_PORT=your_mongo_port your_docker_image_name
-  EOF
+		sudo apt-get update -y
+		sudo apt-get install -y python3 python3-pip
+		sudo apt-get install -y docker.io
+		sudo apt install unzip
+
+		sudo docker pull mongo:latest
+
+		sudo docker run --name local-mongo --restart=always -d -p 27017:27017 mongo:latest
+
+		wget https://storage.googleapis.com/${google_storage_bucket_object.zip_file.bucket}/${google_storage_bucket_object.zip_file.name}
+		unzip ./${google_storage_bucket_object.zip_file.name} -d ./scripts
+		cd ./scripts
+
+		sudo pip3 install --no-cache-dir -r requirements.txt
+		sudo python3 main.py
+
+	EOF
+
 }

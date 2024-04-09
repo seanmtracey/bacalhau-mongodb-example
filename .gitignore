@@ -6,3 +6,5 @@ _poll.py
 terraform.tfstate.backup
 .terraform.lock.hcl
 *.out
+scripts.zip
+.DS_Store
