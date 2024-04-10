@@ -54,7 +54,7 @@ resource "google_compute_instance" "my_instance" {
 
 		sudo docker pull mongo:latest
 
-		sudo docker run --name local-mongo --restart=always -d -p 27017:27017 mongo:latest
+		sudo docker run --name local-mongo --restart=always -d -p 27017:27017 -v mongo_data:/data/db mongo:latest
 
 		wget https://storage.googleapis.com/${google_storage_bucket_object.zip_file.bucket}/${google_storage_bucket_object.zip_file.name}
 		unzip ./${google_storage_bucket_object.zip_file.name} -d ./scripts
