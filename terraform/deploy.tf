@@ -28,9 +28,11 @@ resource "google_compute_firewall" "http" {
 }
 
 resource "google_compute_instance" "my_instance" {
-	name         = "mongodb-test"
+	for_each = var.locations
+
+	name         = "${var.app_name}-${each.key}"
 	machine_type = "e2-small"
-	zone         = "europe-west2-a"
+	zone         = "${each.key}"
 
 	boot_disk {
 		initialize_params {
