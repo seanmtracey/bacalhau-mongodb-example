@@ -31,7 +31,7 @@ resource "google_compute_instance" "my_instance" {
 	for_each = var.locations
 
 	name         = "${var.app_name}-${each.key}"
-	machine_type = "e2-small"
+	machine_type = "${var.machine_type}"
 	zone         = "${each.key}"
 
 	boot_disk {
