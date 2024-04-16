@@ -49,28 +49,38 @@ resource "google_compute_instance" "my_instance" {
 	metadata_startup_script = <<-EOF
 		#!/bin/bash
 
-		sudo apt-get update -y
-		sudo apt-get install -y python3 python3-pip
-		sudo apt-get install -y docker.io
-		sudo apt install unzip
+		# Update package list and install necessary packages
+		apt-get update -y
+		apt-get install -y python3 python3-pip docker.io unzip
 
-		sudo docker pull mongo:latest
+		# Pull MongoDB Docker image
+		docker pull mongo:latest
 
-		sudo docker run --name local-mongo --restart=always -d -p 27017:27017 -v mongo_data:/data/db mongo:latest
+		# Run MongoDB container
+		docker run --name local-mongo --restart=always -d -p 27017:27017 -v mongo_data:/data/db mongo:latest
 
+		# Download and extract files
 		wget https://storage.googleapis.com/${google_storage_bucket_object.zip_file.bucket}/${google_storage_bucket_object.zip_file.name}
 		unzip ./${google_storage_bucket_object.zip_file.name} -d ./scripts
 		cd ./scripts
 
-		sudo pip3 install --no-cache-dir -r requirements.txt
-		# sudo python3 main.py
+		# Install Python dependencies
+		pip3 install --no-cache-dir -r requirements.txt
 
-		echo -e '[Unit]\nDescription=The system poller for use with MongoDB\nAfter=network.target\n\n[Service]\nType=simple\nExecStart=/usr/bin/python3 /scripts/main.py\nRestart=always\n\n[Install]\nWantedBy=multi-user.target' | sudo tee /etc/systemd/system/poller.service
+		# Create systemd service file
+		echo -e '[Unit]\nDescription=The system poller for use with MongoDB\nAfter=network.target\n\n[Service]\nType=simple\nExecStart=/usr/bin/python3 /scripts/main.py\nRestart=always\n\n[Install]\nWantedBy=multi-user.target' > ~/poller.service
 
+		# Move systemd service file to appropriate directory
+		sudo mv ~/poller.service /etc/systemd/system/
+
+		# Reload systemd daemon
 		sudo systemctl daemon-reload
+
+		# Enable and start the systemd service
 		sudo systemctl enable poller.service
 		sudo systemctl start poller.service
-		
+
+		# Enable Docker service
 		sudo systemctl enable docker.service
 
 	EOF
