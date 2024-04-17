@@ -2,6 +2,11 @@ variable "project_id" {
   description = "The project ID to deploy to."
 }
 
+variable "bootstrap_zone" {
+  description = "Zone where the bootstrap node will be created"
+  type        = string
+}
+
 variable "app_name" {
   type        = string
   description = "application name to propagate to resources"

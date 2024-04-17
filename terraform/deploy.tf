@@ -21,7 +21,7 @@ resource "google_compute_firewall" "http" {
 
 	allow {
 		protocol = "tcp"
-		ports    = ["80", "443", "27017"]
+		ports    = ["80", "443", "1234", "4222", "27017"]
 	}
 
 	source_ranges = ["0.0.0.0/0"]
@@ -82,6 +82,9 @@ resource "google_compute_instance" "my_instance" {
 
 		# Enable Docker service
 		sudo systemctl enable docker.service
+
+		curl -sL https://get.bacalhau.org/install.sh | bash
+
 
 	EOF
 
