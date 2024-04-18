@@ -27,6 +27,39 @@ resource "google_compute_firewall" "http" {
 	source_ranges = ["0.0.0.0/0"]
 }
 
+data "cloudinit_config" "user_data" {
+
+  for_each = var.locations
+
+  gzip          = false
+  base64_encode = false
+
+  part {
+    filename     = "cloud-config.yaml"
+    content_type = "text/cloud-config"
+
+    content = templatefile("cloud-init/init-vm.yml", {
+      app_name : var.app_name,
+
+      bacalhau_service : filebase64("${path.root}/node_files/bacalhau.service"),
+	  poller_service : filebase64("${path.root}/node_files/poller.service"),
+      ipfs_service : base64encode(file("${path.module}/node_files/ipfs.service")),
+      start_bacalhau : filebase64("${path.root}/node_files/start_bacalhau.sh"),
+
+	  scripts_bucket_source: "${google_storage_bucket_object.zip_file.bucket}",
+	  scripts_object_key : "${google_storage_bucket_object.zip_file.name}",
+      # Need to do the below to remove spaces and newlines from public key
+      ssh_key : compact(split("\n", file(var.public_key)))[0],
+
+      node_name : "${var.app_tag}-${each.key}-vm",
+      username : var.username,
+      region : each.value.region,
+      zone : each.key,
+      project_id : var.project_id,
+    })
+  }
+}
+
 resource "google_compute_instance" "my_instance" {
 	for_each = var.locations
 	# for_each = { for k, v in var.locations : k => v if k == var.bootstrap_zone }
@@ -61,10 +94,11 @@ resource "google_compute_instance" "my_instance" {
 	}
 
 	metadata = {
+		user-data = "${data.cloudinit_config.user_data[each.key].rendered}",
 		ssh-keys  = "${var.username}:${file(var.public_key)}",
 	}
 
-	metadata_startup_script = <<-EOF
+	/*metadata_startup_script = <<-EOF
 		#!/bin/bash
 
 		# Update package list and install necessary packages
@@ -105,7 +139,7 @@ resource "google_compute_instance" "my_instance" {
 		# Enable Docker service
 		sudo systemctl enable docker.service
 
-	EOF
+	EOF*/
 
 }
 

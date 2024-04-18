@@ -36,3 +36,8 @@ variable "bacalhau_run_file" {
   type        = string
   description = "Bacalhau Run File location"
 }
+
+variable "app_tag" {
+  description = "Environment tag"
+  type        = string
+}
