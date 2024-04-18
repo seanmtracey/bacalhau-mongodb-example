@@ -8,3 +8,5 @@ terraform.tfstate.backup
 *.out
 scripts.zip
 .DS_Store
+terraform/.terraform.tfstate.lock.info
+bacalhau.run

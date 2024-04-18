@@ -21,3 +21,18 @@ variable "machine_type" {
   description = "The type of instance the applications are to run on"
   type        = string
 }
+
+variable "username" {
+  type        = string
+  description = "Username for login"
+}
+
+variable "public_key" {
+  type        = string
+  description = "Public key file that should appear in authorized_keys"
+}
+
+variable "bacalhau_run_file" {
+  type        = string
+  description = "Bacalhau Run File location"
+}

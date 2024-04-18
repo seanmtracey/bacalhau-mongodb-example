@@ -29,6 +29,20 @@ resource "google_compute_firewall" "http" {
 
 resource "google_compute_instance" "my_instance" {
 	for_each = var.locations
+	# for_each = { for k, v in var.locations : k => v if k == var.bootstrap_zone }
+	# for_each = { for k, v in var.locations : k => v if k == var.bootstrap_zone }
+
+	# for_each = {
+	# 	for key, value in var.locations :
+	# 	key => value if key != var.bootstrap_zone
+	# }
+
+	# Your resource configuration...
+
+	# Execute a local command to print out the key
+	provisioner "local-exec" {
+		command = "echo 'Non-bootstrapped instance key: ${each.key}'"
+	}
 
 	name         = "${var.app_name}-${each.key}"
 	machine_type = "${var.machine_type}"
@@ -46,12 +60,20 @@ resource "google_compute_instance" "my_instance" {
 		access_config {}
 	}
 
+	metadata = {
+		ssh-keys  = "${var.username}:${file(var.public_key)}",
+	}
+
 	metadata_startup_script = <<-EOF
 		#!/bin/bash
 
 		# Update package list and install necessary packages
 		apt-get update -y
 		apt-get install -y python3 python3-pip docker.io unzip
+
+		curl -sL https://get.bacalhau.org/install.sh | bash
+
+		bacalhau serve
 
 		# Pull MongoDB Docker image
 		docker pull mongo:latest
@@ -83,9 +105,33 @@ resource "google_compute_instance" "my_instance" {
 		# Enable Docker service
 		sudo systemctl enable docker.service
 
-		curl -sL https://get.bacalhau.org/install.sh | bash
-
-
 	EOF
 
+}
+
+
+resource "null_resource" "configure_requester_node" {
+  // Only run this on the bootstrap node
+  for_each = { for k, v in google_compute_instance.my_instance : k => v if v.zone == var.bootstrap_zone }
+
+  depends_on = [google_compute_instance.my_instance]
+
+  connection {
+    host        = each.value.network_interface[0].access_config[0].nat_ip
+    port        = 22
+    user        = var.username
+    agent = true
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'SSHD is now alive.'",
+      "echo 'Hello, world.'",
+	  "sudo timeout 600 bash -c 'until [[ -s /data/bacalhau.run ]]; do sleep 1; done' && echo 'Bacalhau is now alive.'",
+    ]
+  }
+
+  provisioner "local-exec" {
+    command = "ssh -o StrictHostKeyChecking=no ${var.username}@${each.value.network_interface[0].access_config[0].nat_ip} 'sudo cat /data/bacalhau.run' > ${var.bacalhau_run_file}"
+  }
 }
