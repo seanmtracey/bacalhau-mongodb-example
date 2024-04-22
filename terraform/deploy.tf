@@ -16,12 +16,12 @@ resource "google_storage_bucket_object" "zip_file" {
 }
 
 resource "google_compute_firewall" "http" {
-	name    = "allow-http-https"
+	name    = "allow-public-access"
 	network = "default"
 
 	allow {
 		protocol = "tcp"
-		ports    = ["80", "443", "1234", "4222", "27017"]
+		ports    = ["80", "443", "1234", "4001", "4222", "5001", "8080", "43167", "42717"]
 	}
 
 	source_ranges = ["0.0.0.0/0"]
@@ -60,7 +60,7 @@ data "cloudinit_config" "user_data" {
   }
 }
 
-resource "google_compute_instance" "my_instance" {
+resource "google_compute_instance" "gcp_instance" {
 	for_each = var.locations
 	# for_each = { for k, v in var.locations : k => v if k == var.bootstrap_zone }
 	# for_each = { for k, v in var.locations : k => v if k == var.bootstrap_zone }
@@ -103,9 +103,9 @@ resource "google_compute_instance" "my_instance" {
 
 resource "null_resource" "configure_requester_node" {
   // Only run this on the bootstrap node
-  for_each = { for k, v in google_compute_instance.my_instance : k => v if v.zone == var.bootstrap_zone }
+  for_each = { for k, v in google_compute_instance.gcp_instance : k => v if v.zone == var.bootstrap_zone }
 
-  depends_on = [google_compute_instance.my_instance]
+  depends_on = [google_compute_instance.gcp_instance]
 
   connection {
     host        = each.value.network_interface[0].access_config[0].nat_ip
@@ -124,5 +124,37 @@ resource "null_resource" "configure_requester_node" {
 
   provisioner "local-exec" {
     command = "ssh -o StrictHostKeyChecking=no ${var.username}@${each.value.network_interface[0].access_config[0].nat_ip} 'sudo cat /data/bacalhau.run' > ${var.bacalhau_run_file}"
+  }
+}
+
+resource "null_resource" "configure_compute_node" {
+  // Only run this on worker nodes, not the bootstrap node
+  for_each = { for k, v in google_compute_instance.gcp_instance : k => v if v.zone != var.bootstrap_zone }
+
+  depends_on = [null_resource.configure_requester_node]
+
+  connection {
+    host        = each.value.network_interface[0].access_config[0].nat_ip
+    port        = 22
+    user        = var.username
+    agent = true
+  }
+
+  provisioner "file" {
+    destination = "/home/${var.username}/bacalhau-bootstrap"
+    content     = file(var.bacalhau_run_file)
+  }
+
+  provisioner "local-exec" {
+    command = "Echo 'I Ran'"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mv /home/${var.username}/bacalhau-bootstrap /etc/bacalhau-bootstrap",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl restart bacalhau.service",
+	  "echo 'Restarted Bacalhau Compute node'",
+    ]
   }
 }

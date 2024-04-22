@@ -6,14 +6,9 @@ IFS=$'\n\t'
 # we start with none as the default ("none" prevents the node connecting to our default bootstrap list)
 export CONNECT_PEER="none"
 
-# Special case - get tailscale address if any
-# If the tailscale0 address exists in the command ip
-export TAILSCALE_ADDRESS=$(ip -4 a l tailscale0 | awk '/inet/ {print $2}' | cut -d/ -f1)
+EXTERNAL_IP=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip)
 
-# if TAILSCALE_ADDRESS is set, use it to populate the CONNECT_PEER variable
-if [[ -n "${TAILSCALE_ADDRESS}" ]]; then
-  export BACALHAU_PREFERRED_ADDRESS="${TAILSCALE_ADDRESS}"
-fi
+echo "${EXTERNAL_IP}"
 
 # if the file /etc/bacalhau-bootstrap exists, use it to populate the CONNECT_PEER variable
 if [[ -f /etc/bacalhau-bootstrap ]]; then
@@ -28,7 +23,7 @@ if [[ -f /etc/bacalhau-node-info ]]; then
   . /etc/bacalhau-node-info
 fi
 
-labels="ip=${TAILSCALE_ADDRESS}"
+labels="ip=${EXTERNAL_IP}"
 
 # If REGION is set, then we can assume all labels are set, and we should add it to the labels
 if [[ -n "${REGION}" ]]; then
@@ -45,4 +40,5 @@ bacalhau serve \
   --allow-listed-local-paths '/db' \
   --allow-listed-local-paths '/var/log/logs_to_process/**' \
   --job-selection-accept-networked \
-  --labels "${labels}"
+  --labels "${labels}" \
+  --network libp2p 
