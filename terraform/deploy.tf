@@ -123,7 +123,7 @@ resource "null_resource" "configure_requester_node" {
   }
 
   provisioner "local-exec" {
-    command = "ssh -o StrictHostKeyChecking=no ${var.username}@${each.value.network_interface[0].access_config[0].nat_ip} 'sudo cat /data/bacalhau.run' > ${var.bacalhau_run_file}"
+    command = "ssh -o StrictHostKeyChecking=no ${var.username}@${each.value.network_interface[0].access_config[0].nat_ip} 'sudo cat /etc/bacalhau-bootstrap' > ${var.bacalhau_run_file}"
   }
 }
 
