@@ -16,28 +16,52 @@ resource "google_storage_bucket_object" "zip_file" {
 }
 
 resource "google_compute_firewall" "http" {
-	name    = "allow-http-https"
+	name    = "allow-public-access"
 	network = "default"
 
 	allow {
 		protocol = "tcp"
-		ports    = ["80", "443", "1234", "4222", "27017"]
+		ports    = ["80", "443", "1234", "4001", "4222", "5001", "8080", "43167", "42717"]
 	}
 
 	source_ranges = ["0.0.0.0/0"]
 }
 
-resource "google_compute_instance" "my_instance" {
+data "cloudinit_config" "user_data" {
+
+  for_each = var.locations
+
+  gzip          = false
+  base64_encode = false
+
+  part {
+    filename     = "cloud-config.yaml"
+    content_type = "text/cloud-config"
+
+    content = templatefile("cloud-init/init-vm.yml", {
+      app_name : var.app_name,
+
+      bacalhau_service : filebase64("${path.root}/node_files/bacalhau.service"),
+	  poller_service : filebase64("${path.root}/node_files/poller.service"),
+      ipfs_service : base64encode(file("${path.module}/node_files/ipfs.service")),
+      start_bacalhau : filebase64("${path.root}/node_files/start_bacalhau.sh"),
+
+	  scripts_bucket_source: "${google_storage_bucket_object.zip_file.bucket}",
+	  scripts_object_key : "${google_storage_bucket_object.zip_file.name}",
+      # Need to do the below to remove spaces and newlines from public key
+      ssh_key : compact(split("\n", file(var.public_key)))[0],
+
+      node_name : "${var.app_tag}-${each.key}-vm",
+      username : var.username,
+      region : each.value.region,
+      zone : each.key,
+      project_id : var.project_id,
+    })
+  }
+}
+
+resource "google_compute_instance" "gcp_instance" {
 	for_each = var.locations
-	# for_each = { for k, v in var.locations : k => v if k == var.bootstrap_zone }
-	# for_each = { for k, v in var.locations : k => v if k == var.bootstrap_zone }
-
-	# for_each = {
-	# 	for key, value in var.locations :
-	# 	key => value if key != var.bootstrap_zone
-	# }
-
-	# Your resource configuration...
 
 	# Execute a local command to print out the key
 	provisioner "local-exec" {
@@ -61,60 +85,18 @@ resource "google_compute_instance" "my_instance" {
 	}
 
 	metadata = {
+		user-data = "${data.cloudinit_config.user_data[each.key].rendered}",
 		ssh-keys  = "${var.username}:${file(var.public_key)}",
 	}
-
-	metadata_startup_script = <<-EOF
-		#!/bin/bash
-
-		# Update package list and install necessary packages
-		apt-get update -y
-		apt-get install -y python3 python3-pip docker.io unzip
-
-		curl -sL https://get.bacalhau.org/install.sh | bash
-
-		bacalhau serve
-
-		# Pull MongoDB Docker image
-		docker pull mongo:latest
-
-		# Run MongoDB container
-		docker run --name local-mongo --restart=always -d -p 27017:27017 -v mongo_data:/data/db mongo:latest
-
-		# Download and extract files
-		wget https://storage.googleapis.com/${google_storage_bucket_object.zip_file.bucket}/${google_storage_bucket_object.zip_file.name}
-		unzip ./${google_storage_bucket_object.zip_file.name} -d ./scripts
-		cd ./scripts
-
-		# Install Python dependencies
-		pip3 install --no-cache-dir -r requirements.txt
-
-		# Create systemd service file
-		echo -e '[Unit]\nDescription=The system poller for use with MongoDB\nAfter=network.target\n\n[Service]\nType=simple\nExecStart=/usr/bin/python3 /scripts/main.py\nRestart=always\n\n[Install]\nWantedBy=multi-user.target' > ~/poller.service
-
-		# Move systemd service file to appropriate directory
-		sudo mv ~/poller.service /etc/systemd/system/
-
-		# Reload systemd daemon
-		sudo systemctl daemon-reload
-
-		# Enable and start the systemd service
-		sudo systemctl enable poller.service
-		sudo systemctl start poller.service
-
-		# Enable Docker service
-		sudo systemctl enable docker.service
-
-	EOF
 
 }
 
 
 resource "null_resource" "configure_requester_node" {
   // Only run this on the bootstrap node
-  for_each = { for k, v in google_compute_instance.my_instance : k => v if v.zone == var.bootstrap_zone }
+  for_each = { for k, v in google_compute_instance.gcp_instance : k => v if v.zone == var.bootstrap_zone }
 
-  depends_on = [google_compute_instance.my_instance]
+  depends_on = [google_compute_instance.gcp_instance]
 
   connection {
     host        = each.value.network_interface[0].access_config[0].nat_ip
@@ -132,6 +114,38 @@ resource "null_resource" "configure_requester_node" {
   }
 
   provisioner "local-exec" {
-    command = "ssh -o StrictHostKeyChecking=no ${var.username}@${each.value.network_interface[0].access_config[0].nat_ip} 'sudo cat /data/bacalhau.run' > ${var.bacalhau_run_file}"
+    command = "ssh -o StrictHostKeyChecking=no ${var.username}@${each.value.network_interface[0].access_config[0].nat_ip} 'sudo cat /etc/bacalhau-bootstrap' > ${var.bacalhau_run_file}"
+  }
+}
+
+resource "null_resource" "configure_compute_node" {
+  // Only run this on worker nodes, not the bootstrap node
+  for_each = { for k, v in google_compute_instance.gcp_instance : k => v if v.zone != var.bootstrap_zone }
+
+  depends_on = [null_resource.configure_requester_node]
+
+  connection {
+    host        = each.value.network_interface[0].access_config[0].nat_ip
+    port        = 22
+    user        = var.username
+    agent = true
+  }
+
+  provisioner "file" {
+    destination = "/home/${var.username}/bacalhau-bootstrap"
+    content     = file(var.bacalhau_run_file)
+  }
+
+  provisioner "local-exec" {
+    command = "Echo 'I Ran'"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mv /home/${var.username}/bacalhau-bootstrap /etc/bacalhau-bootstrap",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl restart bacalhau.service",
+	  "echo 'Restarted Bacalhau Compute node'",
+    ]
   }
 }
