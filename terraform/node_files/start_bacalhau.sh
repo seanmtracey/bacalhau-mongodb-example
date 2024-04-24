@@ -18,7 +18,18 @@ else
   echo -n "${EXTERNAL_IP}" > /etc/bacalhau-bootstrap
 fi
 
-labels="ip=${EXTERNAL_IP}"
+labels="orchestrator-ip=${EXTERNAL_IP}"
+
+# If /etc/bacalhau-node-info exists, then load the variables from it
+if [[ -f /etc/bacalhau-node-info ]]; then
+  # shellcheck disable=SC1090
+  . /etc/bacalhau-node-info
+fi
+
+# If REGION is set, then we can assume all labels are set, and we should add it to the labels
+if [[ -n "${REGION}" ]]; then
+  labels="${labels},region=${REGION},zone=${ZONE},appname=${APPNAME}"
+fi
 
 if [[ "$isOrchestrator" == "true" ]]; then
     echo "isOrchestrator is set."
