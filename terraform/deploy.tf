@@ -62,15 +62,6 @@ data "cloudinit_config" "user_data" {
 
 resource "google_compute_instance" "gcp_instance" {
 	for_each = var.locations
-	# for_each = { for k, v in var.locations : k => v if k == var.bootstrap_zone }
-	# for_each = { for k, v in var.locations : k => v if k == var.bootstrap_zone }
-
-	# for_each = {
-	# 	for key, value in var.locations :
-	# 	key => value if key != var.bootstrap_zone
-	# }
-
-	# Your resource configuration...
 
 	# Execute a local command to print out the key
 	provisioner "local-exec" {
