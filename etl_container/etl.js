@@ -2,6 +2,8 @@ const { MongoClient } = require('mongodb');
 require('dotenv').config();
 const sleep = require('util').promisify(setTimeout);
 
+const LOCATION = process.env.REGION || process.env.LOCATION || "unknown";
+
 async function main() {
   // Current time for timestamp comparison
   const current_time = Date.now() / 1000;
@@ -28,12 +30,17 @@ async function main() {
 
   // Fetching records
   const records = await local_collection.find(query).toArray();
-  console.log(records);
+
+  records.forEach(record => {
+    record.location = LOCATION;
+  });
 
   const atlas_conn_string = process.env.REMOTE_CONN;
   if (!atlas_conn_string) {
     throw new Error("REMOTE_CONN environment variable not set");
   }
+
+  console.log("Attempting to connect to:", atlas_conn_string);
 
   // Connection to MongoDB Atlas
   const atlas_client = new MongoClient(atlas_conn_string);
