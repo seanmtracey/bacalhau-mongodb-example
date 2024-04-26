@@ -10,6 +10,8 @@ def main():
     if os.getenv('LOCAL_CONN'):
         local_conn_string = os.getenv('LOCAL_CONN')
 
+    print("Attempting to connect to:", local_conn_string)
+
     # Connection to local MongoDB
     local_client = MongoClient(local_conn_string)
     local_db = local_client['cpu_memory_records']  # Change db name as needed
