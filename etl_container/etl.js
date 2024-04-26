@@ -61,36 +61,3 @@ async function main() {
     await sleep(30000);
   }
 })();
-
-/*
-const { MongoClient } = require("mongodb");
-
-// Replace the uri string with your connection string.
-const uri =
-  "mongodb+srv://seanmtracey:FZW4U8HCprRpW8Ih@smt-bacalhau-mongo.xmaf0iv.mongodb.net/?retryWrites=true&w=majority&appName=smt-bacalhau-mongo";
-
-const client = new MongoClient(uri);
-
-console.log(client)
-
-async function run() {
-  try {
-    await client.connect();
-
-    const database = client.db('cpu_memory_records');
-    const movies = database.collection('records');
-
-    // Query for a movie that has the title 'Back to the Future'
-    const query = {
-        "timestamp": {"$exists": true},  //# Records in the last 30 seconds
-    };
-    const movie = await movies.findOne(query);
-
-    console.log(movie);
-  } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
-  }
-}
-run().catch(console.dir);
-*/
