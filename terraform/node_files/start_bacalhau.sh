@@ -37,5 +37,5 @@ if [[ "$isOrchestrator" == "true" ]]; then
 else
     ORCHESTRATOR_IP=$(cat /etc/bacalhau-bootstrap)
     echo "isOrchestrator is not set."
-    bacalhau serve --node-type=compute --orchestrators="nats://${ORCHESTRATOR_IP}:4222" --labels "${labels}"
+    bacalhau serve --node-type=compute --orchestrators="nats://${ORCHESTRATOR_IP}:4222" --labels "${labels}" --job-selection-accept-networked=true
 fi

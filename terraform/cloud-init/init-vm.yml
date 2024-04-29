@@ -68,7 +68,7 @@ runcmd:
   # Get MongoDB Container
   #
   - docker pull mongo:latest
-  - docker run --name local-mongo --restart=always -d -p 27017:27017 -v mongo_data:/data/db mongo:latest
+  - docker run --name local-mongo --network=host --restart=always -d -v mongo_data:/data/db mongo:latest
   #
   # Install poller scripts
   #
