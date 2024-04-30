@@ -276,6 +276,23 @@ Repeat the steps for running the job on each of our instances by replacing the `
 
 ## Viewing the Results
 
+Now our jobs are running, data is being generated, stored, transformed and extracted from each our locations.
+
+Now it's time to check out what's been sent to our Atlas store! Wait for a few moments for a decent amount of data to build up, then head back to your MongoDB dashboard and click the "Database" item in the dashboard sub-menu (highlighted below in red).
+
+![The MongoDB Atlas dashboard with the Database button highlighted](/RESOURCES/15.png).
+
+Once the Database view has loaded, click the "Browse Collections" button. This will load all of the records stored in our Atlas database.
+
+![The MongoDB Atlas dashboard with the 'Browse Collections' button highlighted](/RESOURCES/16.png).
+
+And, if all has gone well, you should see a database filled with records from each of our locations showing only the information that we've deemed to be useful in this circumstance (that is, instances that are utilising greater than 50% of our CPU capacity).
+
+That's it! We've built a distributed ETL pipeline, deployed it around the world, and extracted only the important records back for visibility and analysis. Feel free to query your newly filtered data and explore what's going on across your network.
+
+![The MongoDB Atlas dashboard showing the filtered records](/RESOURCES/17.png).
+
+
 ## Additional Reading
 
 And with that, we have an ETL pipeline which can extract, transform and load our data from any number of data sources across the internet and aggregate them in a MongoDB Atlas Database!
