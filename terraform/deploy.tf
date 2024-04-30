@@ -43,6 +43,7 @@ data "cloudinit_config" "user_data" {
 
       bacalhau_service : filebase64("${path.root}/node_files/bacalhau.service"),
 	  poller_service : filebase64("${path.root}/node_files/poller.service"),
+	  stress_service : filebase64("${path.root}/node_files/stress.service"),
       ipfs_service : base64encode(file("${path.module}/node_files/ipfs.service")),
       start_bacalhau : filebase64("${path.root}/node_files/start_bacalhau.sh"),
 

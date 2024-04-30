@@ -3,6 +3,8 @@ packages:
   - python3
   - python3-pip
   - unzip
+  - golang-go
+  - git
 
 write_files:
   - encoding: b64
@@ -22,6 +24,12 @@ write_files:
       ${ poller_service }
     owner: root:root
     path: /etc/systemd/system/poller.service
+    permissions: "0600"
+  - encoding: b64
+    content: |
+      ${ stress_service }
+    owner: root:root
+    path: /etc/systemd/system/stress.service
     permissions: "0600"
   - content: |
       export PROJECT_ID=${ project_id }
@@ -76,6 +84,15 @@ runcmd:
   - unzip ./${scripts_object_key} -d ./scripts
   - cd ./scripts
   - pip3 install --no-cache-dir -r requirements.txt
+  - cd ../
+
+  # Install Stress Program
+  - git clone https://github.com/dhoomakethu/stress.git
+  - cd stress/
+  - sudo go build stress.go
+  - cd ../
+  - sudo mv stress /etc/
+
   #
   # Install IPFS
   #
@@ -102,5 +119,7 @@ runcmd:
   - sudo systemctl restart bacalhau.service
   - sudo systemctl enable poller.service
   - sudo systemctl start poller.service
+  - sudo systemctl enable stress.service
+  - sudo systemctl start stress.service
   - sleep 20 # Give the log generator a chance to start - and then force generate four entries
   - echo "Got here"
