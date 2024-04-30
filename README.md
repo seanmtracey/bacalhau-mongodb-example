@@ -17,10 +17,6 @@ In this document, we'll be working through spinning up our own distributed netwo
 
 ### The Problem
 
-- Lots of data is generated in lots of places
-- Aggregating that in full can be expensive
-- Processing that at each location can be logistically challenging
-
 Why are we doing this? Well, modern infrastructure generates a lot of data in a lot of different places. Keeping tabs on where that data is, and accessing when you want to gain some insight can be both logistically complex, and expensive.
 
 Typically, there are two approaches:
@@ -75,13 +71,15 @@ For this example project, we're going to be aggregating our filtered data in a [
 
 To get started, head over to the [MongoDB Atlas  home page](https://www.mongodb.com/atlas/database), and click the "Try Free" button. Follow the instructions in the form to create an account which will enable us to spin up a MongoDB Atlas deployment.
 
+![The MongoDB Atlas Homepage](/RESOURCES/0.png)
+
 #### Creating a MongoDB Atlas Deployment
 
-Once you've finished the sign-up process, you'll be taken to the "Overview" page for your new account. Click the "Create a deployment" button.
+Once you've finished the sign-up process, you'll be taken to the "Overview" page for your new account. Click the "Create a deployment" button (highlighted in red).
 
->>> IMAGE OF CREATE A DEPLOYMENT BUTTON
+![The MongoDB Atlas dashboard showing the "create a deployment" button](/RESOURCES/2.png)
 
-This will take you a form where you can deploy the database. For the purposes of this demo, 
+This will take you a form where you can deploy the database. For the purposes of this demo:
 
 1. Select the M0 type database
 2. Give it a sensible name that you'll remember
@@ -93,9 +91,13 @@ This will take you a form where you can deploy the database. For the purposes of
 
 Once you've filled in the form, click "Create Deployment".
 
+![The MongoDB Atlas Configuration page](/RESOURCES/3.png)
+
 #### Adding a Database User 
 
 Once the deployment process has finished, you'll be presented with a modal that will allow you to create a connection to your new Atlas instance. 
+
+![The MongoDB Atlas dialog adding a user to the database](/RESOURCES/4.png)
 
 We don't need to do all of this quite at the moment, but copy the username and password presented in the form as the default user, and save them somewhere secure on your system. We'll need this information later. The click the "Create Database User" button. 
 
@@ -107,11 +109,13 @@ The last step in this process is enabling access to our Atlas database through t
 
 *Please note: This doesn't mean absolutely anybody on the internet will be able to access the data on our instance. Connections will still be secured over TLS and protected by the username/password combo we just saved.*
 
-In the sidebar of the Atlas interface, click the "Network Access" tab.
+In the sidebar of the Atlas interface, click the "Network Access" tab (highlighted in purple).
+
+![The MongoDB Atlas dashboard with the network tab highlighted](/RESOURCES/7.png)
 
 You'll be taken to an overview page which will contain the IP address of the computer we just created our database from in a table.
 
-To the top-right of that table, click the "ADD IP ADDRESS" button, and in the modal that appears, click "ALLOW ACCES FROM ANYWHERE", and then "Confirm".
+To the top-right of that table, click the "ADD IP ADDRESS" button (highlighted in blue), and in the modal that appears, click "ALLOW ACCES FROM ANYWHERE", and then "Confirm".
 
 Your MongoDB Atlas Database is now setup for access!
 
@@ -119,9 +123,13 @@ Your MongoDB Atlas Database is now setup for access!
 
 The last thing we need to do before we move on is get a connection string that we can use to connect to Atlas from our Bacalhau jobs later on.
 
-Click on the "Overview" tab of the Atlas sidebar, and in the "Database Deployments" section of the page, click the "Connect" button.
+Click on the "Overview" tab of the Atlas sidebar, and in the "Database Deployments" section of the page, click the "Connect" button (highlighted) in pink.
 
-We're not going to connect right now, but we can get the string we need for connections in this dialog. Click the "Compass" option, and under Step 2, copy the entire string and put it somewhere for later.
+![The MongoDB Atlas dashboard with the connect button highlighted](/RESOURCES/11.png)
+
+We're not going to connect right now, but we can get the string we need for connections in this dialog. Click the "Compass" option, and under Step 2 (highlighted below in red), copy the entire string and put it somewhere for later. Now would be a good time to replace the `<password>` section of the string with the password we copied when creating our database user.
+
+![The MongoDB Atlas dashboard with the connection string highlighted](/RESOURCES/14.png)
 
 ### Setting up a Google Cloud account
 
