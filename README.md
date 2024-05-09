@@ -15,6 +15,8 @@ You will need:
 
 In this document, we'll be working through spinning up our own distributed network of databases across multiple regions of Google Cloud, and then applying the ETL ([Extract-Transform-Load](https://en.wikipedia.org/wiki/Extract,_transform,_load)) pattern to the data that is being stored in each location with Bacalhau.
 
+![The MongoDB Atlas Homepage](/RESOURCES/18.png)
+
 ### The Problem
 
 Why are we doing this? Well, modern infrastructure generates a lot of data in a lot of different places. Keeping tabs on where that data is, and accessing when you want to gain some insight can be both logistically complex, and expensive.
